@@ -100,7 +100,7 @@ def inference(args, loader, model, transforms):
 def noop(x):
     return x
 
-def main():
+def main(tds, vds):
     parser = argparse.ArgumentParser()
     parser.add_argument('--batchSz', type=int, default=10)
     parser.add_argument('--dice', action='store_true')
@@ -178,18 +178,6 @@ def main():
 
     # LUNA16 dataset isotropically scaled to 2.5mm^3
     # and then truncated or zero-padded to 160x128x160
-    normMu = [-642.794]
-    normSigma = [459.512]
-    normTransform = transforms.Normalize(normMu, normSigma)
-
-    trainTransform = transforms.Compose([
-        transforms.ToTensor(),
-        normTransform
-    ])
-    testTransform = transforms.Compose([
-        transforms.ToTensor(),
-        normTransform
-    ])
     if ct_targets == nodule_masks:
         masks = lung_masks
     else:
@@ -200,27 +188,15 @@ def main():
             print("args.resume must be set to do inference")
             exit(1)
         kwargs = {'num_workers': 1} if args.cuda else {}
-        src = args.inference
-        dst = args.save
         inference_batch_size = args.ngpu
-        root = os.path.dirname(src)
-        images = os.path.basename(src)
-        dataset = dset.LUNA16(root=root, images=images, transform=testTransform, split=target_split, mode="infer")
-        loader = DataLoader(dataset, batch_size=inference_batch_size, shuffle=False, collate_fn=noop, **kwargs)
-        inference(args, loader, model, trainTransform)
+        loader = DataLoader(tds, batch_size=inference_batch_size, shuffle=False, collate_fn=noop, **kwargs)
+        inference(args, loader, model, noop)
         return
 
     kwargs = {'num_workers': 1, 'pin_memory': True} if args.cuda else {}
-    print("loading training set")
-    trainSet = dset.LUNA16(root='luna16', images=ct_images, targets=ct_targets,
-                           mode="train", transform=trainTransform, 
-                           class_balance=class_balance, split=target_split, seed=args.seed, masks=masks)
-    trainLoader = DataLoader(trainSet, batch_size=batch_size, shuffle=True, **kwargs)
+    trainLoader = DataLoader(tds, batch_size=batch_size, shuffle=True, **kwargs)
     print("loading test set")
-    testLoader = DataLoader(
-        dset.LUNA16(root='luna16', images=ct_images, targets=ct_targets,
-                    mode="test", transform=testTransform, seed=args.seed, masks=masks, split=target_split),
-        batch_size=batch_size, shuffle=False, **kwargs)
+    testLoader = DataLoader(vds, batch_size=batch_size, shuffle=False, **kwargs)
 
     target_mean = trainSet.target_mean()
     bg_weight = target_mean / (1. + target_mean)
@@ -379,6 +355,3 @@ def adjust_opt(optAlg, optimizer, epoch):
 
         for param_group in optimizer.param_groups:
             param_group['lr'] = lr
-
-if __name__ == '__main__':
-    main()
