@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+import easydict as easydict
 
 from local import *
 import time
@@ -101,33 +102,24 @@ def noop(x):
     return x
 
 def main(tds, vds):
-    parser = argparse.ArgumentParser()
-    parser.add_argument('--batchSz', type=int, default=10)
-    parser.add_argument('--dice', action='store_true')
-    parser.add_argument('--ngpu', type=int, default=1)
-    parser.add_argument('--nEpochs', type=int, default=300)
-    parser.add_argument('--start-epoch', default=0, type=int, metavar='N',
-                        help='manual epoch number (useful on restarts)')
-    parser.add_argument('--resume', default='', type=str, metavar='PATH',
-                        help='path to latest checkpoint (default: none)')
-    parser.add_argument('-e', '--evaluate', dest='evaluate', action='store_true',
-                        help='evaluate model on validation set')
-    parser.add_argument('-i', '--inference', default='', type=str, metavar='PATH',
-                        help='run inference on data set and save results')
+    args = easydict.EasyDict({
+    "batchSz":10, "dice":True,
+    "ngpu": 1,
+    "nEpochs": 300,
+    "start-epoch": 0,
+    "resume": '',
+    "evaluate": True,
+    "inference": '',
+    "weight-decay": 1e-8,
+    "no-cuda": True,
+    "seed":1,
+    "opr": 'adam',
+    "save":'work/vnet.base.{}'.format(datestr())})
 
     # 1e-8 works well for lung masks but seems to prevent
     # rapid learning for nodule masks
-    parser.add_argument('--weight-decay', '--wd', default=1e-8, type=float,
-                        metavar='W', help='weight decay (default: 1e-8)')
-    parser.add_argument('--no-cuda', action='store_true')
-    parser.add_argument('--save')
-    parser.add_argument('--seed', type=int, default=1)
-    parser.add_argument('--opt', type=str, default='adam',
-                        choices=('sgd', 'adam', 'rmsprop'))
-    args = parser.parse_args()
     best_prec1 = 100.
     args.cuda = not args.no_cuda and torch.cuda.is_available()
-    args.save = args.save or 'work/vnet.base.{}'.format(datestr())
     nll = True
     if args.dice:
         nll = False
@@ -198,7 +190,7 @@ def main(tds, vds):
     print("loading test set")
     testLoader = DataLoader(vds, batch_size=batch_size, shuffle=False, **kwargs)
 
-    target_mean = trainSet.target_mean()
+    target_mean = tds.target_mean()
     bg_weight = target_mean / (1. + target_mean)
     fg_weight = 1. - bg_weight
     print(bg_weight)
