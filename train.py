@@ -113,7 +113,7 @@ def main(tds, vds):
     "weight_decay": 1e-8,
     "no_cuda": True,
     "seed":1,
-    "opr": 'adam',
+    "opt": 'adam',
     "save":'work/vnet.base.{}'.format(datestr())})
 
     # 1e-8 works well for lung masks but seems to prevent
