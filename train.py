@@ -106,12 +106,12 @@ def main(tds, vds):
     "batchSz":10, "dice":True,
     "ngpu": 1,
     "nEpochs": 300,
-    "start-epoch": 0,
+    "start_epoch": 0,
     "resume": '',
     "evaluate": True,
     "inference": '',
-    "weight-decay": 1e-8,
-    "no-cuda": True,
+    "weight_decay": 1e-8,
+    "no_cuda": True,
     "seed":1,
     "opr": 'adam',
     "save":'work/vnet.base.{}'.format(datestr())})
@@ -119,7 +119,7 @@ def main(tds, vds):
     # 1e-8 works well for lung masks but seems to prevent
     # rapid learning for nodule masks
     best_prec1 = 100.
-    args.cuda = not args.no_cuda and torch.cuda.is_available()
+    args.cuda = torch.cuda.is_available()
     nll = True
     if args.dice:
         nll = False
